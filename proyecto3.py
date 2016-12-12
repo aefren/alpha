@@ -27,7 +27,7 @@ for i in ao2.get_output_classes():
   if i.name == speaker: sp = i()
 
 pygame.display.set_mode((800, 600))
-pygame.mixer.pre_init(44100, -16, 2, 760)
+pygame.mixer.pre_init(44100, -16, 2, 300)
 pygame.init()
 pygame.mixer.set_num_channels(60)
 
@@ -35,6 +35,8 @@ pickle.DEFAULT_VERSION = 4
 getcontext().prec = 5
 sounds = os.getcwd()+str("/sounds/")
 wav = ".wav"
+ogg = ".ogg"
+mp3 = ".mp3"
 mixer = pygame.mixer
 Load = mixer.Sound
 
@@ -88,9 +90,11 @@ water = [6, 7, 8]
 
 
 # Channels.
-ch1 = pygame.mixer.Channel(1)
-ch2 = pygame.mixer.Channel(2)
-ch2 = pygame.mixer.Channel(3)  
+ch1 = pygame.mixer.Channel(1) # errn1
+ch2 = pygame.mixer.Channel(2) # errn2
+ch3 = pygame.mixer.Channel(3) # tile owner.
+ch4 = pygame.mixer.Channel(4) # tile units  
+ch5 = pygame.mixer.Channel(5) # Reserved.
 ch10 = pygame.mixer.Channel(10)
 ch11 = pygame.mixer.Channel(11)
 ch12 = pygame.mixer.Channel(12)
@@ -165,19 +169,18 @@ def add_city(player, position):
     i.name = city.name
     i.player = player.player
 
-def addimprovement(player, pos, improvement):
-  improvement.turns = 0
-  pos.improvement = improvement
-  pos.improvement.setself(pos)
+def add_improvement(improvement, position):
+  position.improvement = DC(improvement)
+  position.improvement.setself(position)
 
-def addnomad(pos, unit):
+def add_omad(pos, unit):
   unit.ai = 1
   unit.player = 'Nomads'
   unit.friend = ['Nomads']
   unit.location = wmap.index(pos)
   pos.military.append(DC(unit))
 
-def addunit(player, position, unit):
+def add_unit(player, position, unit):
   toadd = DC(unit)
   if toadd.can_transport: 
     toadd.units= list()
@@ -200,6 +203,12 @@ def addunit(player, position, unit):
   if position.terrain not in water and unit.can_sail and unit.is_mechanical:
     position.civil.append(toadd)
   player.units.append(toadd)
+
+def start_improvement(improvement, position, unit):
+  unit.is_working = 1
+  loadsound(choice(improvement.sound))
+  loadsound(choice(unit.working))
+  add_improvement(improvement, position) 
 
 def ai_move():
   global checknext, players, position, tipo, tomove
@@ -231,7 +240,7 @@ def ai_move():
         position = wmap[unit.location]
         if unit.moves and unit.can_pillage:
           set_pillage(player, unit)
-        if unit.hitpoint*unit.hitpoint_m//100 < 50:
+        if unit.hitpoint*unit.hitpoint_max//100 < 50:
           break
         if unit.moves:
           square = setplace(position, value=1, action='return')
@@ -390,6 +399,93 @@ def check_enemy():
   
   sp.speak('{} {}, {} {}.'.format(enemies, enemies_t, friends, friends_t),1)
 
+def check_improvement_rq(improvement, player, position):0
+  playername = player.player
+  in_owned = 1
+  in_resource = 1
+  in_terrain = 1
+  in_subterrain = 1
+  
+  if position.player ==player.player and 0 in improvement.tile_owned:
+    in_owned = 0
+  if position.player inplayer.friends and 1 in improvement.tile_owned:
+    in_owned = 0
+  if position.player ==None and 2 in improvement.tile_owned:
+    in_owned = 0
+  if (position.player != player.player and position.player not in player.friends
+      and position.player != None and 3 in improvement.tile_owned):
+    in_owned = 0
+
+def check_improvement_rq1(item, player, position):
+if position.player inplayer.friends and 1 in improvement.tile_owned:
+  blocked = 1
+  playername = player.player
+  if item.in_owns and position.player == playername:
+    blocked = 0
+  elif item.in_owns and position.player != playername:
+    loadsound('errn1')
+    sp.speak('no tuyo')
+    return blocked
+  
+  if item.in_friend and position.player in player.friends:
+    blocked = 0
+  elif item.in_friend and position.player not in player.friends:
+    loadsound('errn1')
+    sp.speak('no amigo')
+    return blocked
+  
+  if item.in_neutral and position.player == None:
+    blocked = 0
+  elif item.in_neutral and position.player != None:
+    loadsound('errn1')
+    sp.speak('no neutral')
+    return blocked
+  
+  if item.in_hostile and (position.player != None 
+    and position.player not in player.friends):
+    blocked = 0
+  elif item.in_hostile and (position.player == None 
+    or position.player in player.friends):
+    loadsound('errn1')
+    sp.speak('no enemigo')
+    return blocked
+  
+  
+  if position.terrain not in item.terrain:
+    sp.speak('no terrain')
+    return blocked
+  if position.subterrain not in item.subterrain:
+    sp.speak('no en subterrain')
+    return blocked
+  if position.hill not in item.hill:
+    sp.speak('no en hill')
+    return blocked
+  
+  
+  if position.resource and position.resource.visible == 0: res = None
+  elif position.resource and position.resource.visible: res = position.resource
+  elif position.resource == None: res = None
+  if res not in item.resources:
+    sp.speak('no en recurso')
+    return blocked
+
+def check_works():
+  for t in wmap:
+    for unit in t.civil+t.military:
+      if unit.is_working and t.improvement.turns > 0:
+        t.improvement.turns -= 1
+        if t.improvement.turns < 0: 
+          t.improvement.turns = 0
+          add_improvement()
+      if unit.is_working and t.improvement.turns <= 0: unit.is_working = 0
+  
+  
+        
+    
+      
+      
+      
+
 def combat(defensor, attacker, pos, auto=1):
   units = [defensor, attacker]
   units = sorted(units, key=attrgetter('is_ranged'), reverse=True)
@@ -428,7 +524,7 @@ def combat(defensor, attacker, pos, auto=1):
       f_hitpoint = focus.hitpoint
       f_precision = focus.precision
       f_protection = focus.protection
-      f_strength = (f_hitpoint*100//focus.hitpoint_m)*focus.strength//100
+      f_strength = (f_hitpoint*100//focus.hitpoint_max)*focus.strength//100
       sp.speak('damage {} of {}.'.format(f_strength, focus.strength))
       f_strength = focus.strength
       if unit == 0: 
@@ -860,7 +956,7 @@ def describeunit(unit, sound=1):
   sp.speak('{} {}.'.format(unit.player, unit.name),1)
   if unit.is_commander:
     sp.speak('{} {}.'.format(compoints_t, unit.compoints))
-  sp.speak('{} {} {}.'.format(unit.moves, of_t, unit.moves_m))
+  sp.speak('{} {} {}.'.format(unit.moves, of_t, unit.moves_max))
   if unit.is_ranged == 0 and unit.can_combat: sp.speak(melee_t)
   if unit.is_ranged == 0 and unit.can_combat == 0: sp.speak(civil_t)
   if unit.is_ranged == 1: sp.speak(ranged_t)
@@ -877,7 +973,7 @@ def explore_map(event):
   info = 1
   x1= 0
   x2= 0
-  sp.speak('', 1)
+  sp.speak(",",1)
   if event.key == pygame.K_LEFT: 
     if position not in west:
       if cityview:
@@ -933,9 +1029,15 @@ def explore_map(event):
       pygame.event.clear()
   
   #sounds.
-  if position.player == player.player: loadsound("back5")
-  elif position.player == None: loadsound("arch_hits6")
-  elif position.player not in [None, player.player]: loadsound("melee_metal_sh1")
+  if position.player == player.player:
+    ch3.set_volume(0.5)
+    loadsound("back5", ch3)
+  elif position.player == None:
+    ch3.set_volume(0.5) 
+    loadsound("arch_hits6", ch3)
+  elif position.player not in [None, player.player]:
+    ch3.set_volume(0.5)
+    loadsound("melee_metal_sh1", channel=ch3)
 
 
 def explore_map_check(city, position):
@@ -985,36 +1087,134 @@ def get_city(player, position, unit):
     loadsound('back1')
   unit.hitpoint = 0
 
-def get_event(event, player, position, unit):
-  global tomove
-  if event.key == pygame.K_b:
-    if unit.is_settler:
-      ask = asking(warning1_t)
-      if ask == 0: return
-      loadsound('buildconstruct1')
-      add_city(player, position)
-      set_city(player)
-      set_science(player)
-      unit.hitpoint = -1
-      remove_unit()
-      tomove = list()
+def get_items(player, toget, unit):
+  technames = []
+  for tech in player.researched: technames.append(tech.name)
+  if toget == "improvement":
+    items = list()
+    for imp in unit.improvements:
+      blocked = 0
+      for tech in imp.tech_rq:
+        if tech.name not in technames: 
+          blocked = 1
+      if blocked == 0:
+        items.append(DC(imp))
+        
+    return items
 
-
-def getitem(player, pos, city=None, toget=str(), Unit=None):
-  global wmap
+def get_move(tomove):
+  global position, player
+  destiny = tomove.moveto[0]
+  square = setplace(position, value=1, action="return")
+  shuffle(square)
+  if tomove.can_sail == 0:
+    square = [sq for sq in square if sq.terrain not in [6, 7, 8]]
+  if tomove.can_fly == 0:
+    square = [sq for sq in square if sq.terrain != 5]
   
-  playername = player.player
-  def sortitem():
-    if toget == 'improvements':
-      sp.speak(improvements_t,1)
-      item = list()
-      for imp in Unit.improvements:
-        blocked = 0
-        for tech in imp.tech_rq:
-          if tech not in player.researched: blocked = 1
-        if blocked == 0: item.append(imp)
-      return item
-    
+  if destiny.x < position.x:
+    square = [sq for sq in square if sq.x <= position.x]
+  if destiny.x > position.x:
+    square = [sq for sq in square if sq.x >= position.x]
+  if destiny.y < position.y:
+    square = [sq for sq in square if sq.y <= position.x]
+  if destiny.y > position.y:
+    square = [sq for sq in square if sq.x >= position.x]
+  
+  square = sorted(square, key=attrgetter("subterrain", "hill"))
+  Pdb().set_trace()
+  checknext = square[0]
+  return checknext
+
+def get_units(position):
+  global tileunits
+  tileunits = list()
+  for unit in position.military+position.civil:
+    if unit.seen:
+      tileunits.append(unit)
+
+def healunit(unit):
+  global players
+  mapupdate()
+  player = players[num] 
+  pos = wmap[unit.location]
+  heal = pos.heal
+  if unit.can_heal and unit.hitpoint < unit.hitpoint_max:
+    if pos.player in unit.friends:
+      heal_rate = unit.heal_infriend+heal
+      unit.hitpoint += heal_rate*unit.hitpoint_max//100
+    if pos.player == None:
+      heal_rate = unit.heal_inneutral+heal
+      unit.hitpoint += heal_rate*unit.hitpoint_max//100
+    if pos.player not in unit.friends and pos.player != None:
+      heal_rate = unit.heal_inhostile+heal
+      unit.hitpoint += heal_rate*unit.hitpoint_max//100
+      
+    if unit.hitpoint > unit.hitpoint_max: 
+      unit.hitpoint = unit.hitpoint_max
+
+def info_city(event, position):
+  if event.key == pygame.K_c:
+    sp.speak('{} {}.'.format(city.culture, culture_t),1)
+  if event.key == pygame.K_d:
+    sp.speak('{} {}.'.format(wmap[city.location].c_defense, defense_t),1)
+  if event.key == pygame.K_e:
+    sp.speak('{} {}.'.format(city.gold, gold_t),1)
+  if event.key == pygame.K_q:
+    sp.speak('{} {}.'.format(city.food, food_t),1)
+  if event.key == pygame.K_s:
+    sp.speak("{} {}, {} {}, {} {}, {} {}.".format(position.totalfood, food_t, position.totalproduction, production_t, position.totalgold, gold_t, position.culture, culture_t))
+  if event.key == pygame.K_w:
+    sp.speak('{} {}.'.format(city.production, production_t),1)
+
+def info_tile(event, position):
+  if event.key == pygame.K_a:
+    attr = get_attrition(position, player)
+    sp.speak('{} {}%.'.format(attrition_t, attr),1)
+  if event.key == pygame.K_c:
+    sp.speak('{} {}.'.format(culture_t, position.culture),1)
+  if event.key == pygame.K_d:
+    sp.speak('{} {}%.'.format(defense_t, position.totaldefense),1)
+  if event.key == pygame.K_e:
+    sp.speak('{} {}.'.format(gold_t, position.totalgold),1)
+  if event.key == pygame.K_q:
+    sp.speak('{} {}.'.format(food_t, position.totalfood),1)
+  if event.key == pygame.K_r:
+    if position.resource:
+      res = position.resource
+      tospeak = '{} {}, {} {}, {} {}.'.format(food_t, res.food, production_t,
+        res.production, gold_t, res.gold)
+      sp.speak('{}. {}'.format(res.name, tospeak), 1)
+  if event.key == pygame.K_s:
+    info = 1
+  if event.key == pygame.K_w:
+    sp.speak('{} {}.'.format(production_t, position.totalproduction),1)
+
+def info_unit(event, position):
+  if event.key == pygame.K_a:
+    sp.speak('{} {}, {} {}.'.format(strength_t, tomove.strength, precision_t, tomove.precision),1)
+  if event.key == pygame.K_d:
+    sp.speak('{} {}, {} {}.'.format(protection_t, tomove.protection, defense_t, tomove.defense), 1)
+  if event.key == pygame.K_e:
+    sp.speak('{} {}.'.format(maintenance_t, tomove.maintenance), 1)
+    sp.speak('{} {}.'.format(food_t, tomove.food_cost))
+  if event.key == pygame.K_q:
+    sp.speak('{} {} {} {}.'.format(hitpoint_t, tomove.hitpoint, of_t, tomove.hitpoint_max),1)
+  if event.key == pygame.K_r:
+    for notes in tomove.notes:
+      if notes == tomove.notes[-1]:
+        sp.speak('{}.'.format(notes))
+      else:
+        sp.speak('{},'.format(notes))
+  if event.key == pygame.K_s:
+    describeunit(tomove)
+  if event.key == pygame.K_w:
+    sp.speak('{} {} {} {}.'.format(moves_t, tomove.moves, of_t, tomove.moves_max),1)
+
+
+def item_selection(city, item, player, position, toget, unit):
+  global wmap
+  def temporal():    
     if toget == 'queue':
       item = list()
       for it in city.queue: item.append(it)
@@ -1082,8 +1282,7 @@ def getitem(player, pos, city=None, toget=str(), Unit=None):
             item.append(unit)
       
       return item
-    
-  item = sortitem()
+  
   sort = 1
   x = 0 
   say = 1
@@ -1125,13 +1324,11 @@ def getitem(player, pos, city=None, toget=str(), Unit=None):
         sp.speak(disabled_t)
       
       if event.type == pygame.KEYDOWN and event.key == pygame.K_UP:
-        x = selector(item, x, go="up")
+        x = selector(item, x, go="up", sound="improvement_selection")
         say = 1
-        sp.speak(' ', 1)
       if event.type == pygame.KEYDOWN and event.key == pygame.K_DOWN:
-        x = selector(item, x, go="down")
+        x = selector(item, x, go="down", sound="improvement_selection")
         say = 1
-        sp.speak(' ', 1)
       if toget == 'technologies':
         if event.type == pygame.KEYDOWN and event.key == pygame.K_1:
           item = sortitem()
@@ -1145,8 +1342,8 @@ def getitem(player, pos, city=None, toget=str(), Unit=None):
           x = 0
           say = 1
       
-      if (item  
-        and toget in ['buildings', 'improvements', 'queue', 'show', 'technologies']):
+      if (item and toget in   
+        ['buildings', 'improvements', 'queue', 'show', 'technologies']):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_q:
           sp.speak('{} {}.'.format(food_t, item[x].food), 1)
         if event.type == pygame.KEYDOWN and event.key == pygame.K_w:
@@ -1178,13 +1375,14 @@ def getitem(player, pos, city=None, toget=str(), Unit=None):
             for building in item[x].buildings:
               if building in player.av_buildings: 
                 sp.speak(building.name)
-          
-      if (item 
-        and toget in ['buildings', 'improvements', 'queue', 'show', 'units']):
+                
+      
+      if (item and toget in  
+        ['buildings', 'improvements', 'queue', 'show', 'units']):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_g:
           sp.speak('{} {}.'.format(maintenance_t, item[x].maintenance), 1)
-        
-        
+      
+      
       if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
         if toget == 'technologies' and item:
           sp.speak(resources_t, 1)
@@ -1211,7 +1409,7 @@ def getitem(player, pos, city=None, toget=str(), Unit=None):
       if event.type == pygame.KEYDOWN and event.key == pygame.K_f: 
         if toget == "units" and item:
           sp.speak("{} {} {} {}, {} {}, {} {}.".format(hitpoint_t, 
-            item[x].hitpoint, of_t, item[x].hitpoint_m, defense_t, 
+            item[x].hitpoint, of_t, item[x].hitpoint_max, defense_t, 
             item[x].defense, protection_t, item[x].protection))
       
 #         if toget == "technologies" and item:
@@ -1234,6 +1432,7 @@ def getitem(player, pos, city=None, toget=str(), Unit=None):
             for tech_rq in item[x].tech_rq:
               if  tech_rq in player.av_tech:
                 sp.speak(tech_rq.name)
+      
       if event.type == pygame.KEYDOWN and event.key == pygame.K_g:
         if toget == "technologies" and item:
           sp.speak(leads_t, 1)
@@ -1262,62 +1461,18 @@ def getitem(player, pos, city=None, toget=str(), Unit=None):
           loadsound("melee_flesh_sh1")
           sleep(0.5)
       
-      blacklist = ['show', 'queue']
       if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-        if toget not in blacklist:
+        if toget not in ['show', 'queue']:
           if item and toget == "technologies" and item[x] not in player.researching:
             player.researching.append(DC(item[x]))
             sp.speak("{} {}.".format(item[x].name, added_t), 1)
             loadsound("back5")
           if item and toget == 'improvements':
-            blocked = 1
-            if item[x].in_owns and pos.player == playername:
-              blocked = 0
-            elif item[x].in_owns and pos.player != playername:
-              loadsound('errn1')
-              sp.speak('no tuyo')
-              return
-            if item[x].in_friend and pos.player in player.friends:
-              blocked = 0
-            elif item[x].in_friend and pos.player not in player.friends:
-              loadsound('errn1')
-              sp.speak('no amigo')
+            blocked = check_improvement_rq(item[x], player, position)
+            if blocked:
               continue
-            if item[x].in_neutral and pos.player == None:
-              blocked = 0
-            elif item[x].in_neutral and pos.player != None:
-              loadsound('errn1')
-              sp.speak('no neutral')
-              continue
-            if item[x].in_hostile and (pos.player != None 
-              and pos.player not in player.friends):
-              blocked = 0
-            elif item[x].in_hostile and (pos.player == None 
-              or pos.player in player.friends):
-              loadsound('errn1')
-              sp.speak('no enemigo')
-              continue
-            if pos.terrain not in item[x].terrain:
-              sp.speak('no terrain')
-              continue
-            if pos.subterrain not in item[x].subterrain:
-              sp.speak('no en subterrain')
-              continue
-            if pos.hill not in item[x].hill:
-              sp.speak('no en hill')
-              continue
-            if pos.resource and pos.resource.visible == 0: res = None
-            elif pos.resource and pos.resource.visible: res = pos.resource
-            elif pos.resource == None: res = None
-            if res not in item[x].resources:
-              sp.speak('no en recurso')
-              continue            
             
-            tomove.is_working = 1
-            pos.improvement = DC(item[x])
-            pos.improvement.in_progress = 1
-            wait =loadsound(choice(item[x].sound))/2
-            sleep(wait)
+            start_improvement(item[x], position, unit)
             return
           if item and toget == 'units':
             blocked = 0
@@ -1346,116 +1501,6 @@ def getitem(player, pos, city=None, toget=str(), Unit=None):
       if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
         loadsound("back1")
         return
-
-def get_move(tomove):
-  global position, player
-  destiny = tomove.moveto[0]
-  square = setplace(position, value=1, action="return")
-  shuffle(square)
-  if tomove.can_sail == 0:
-    square = [sq for sq in square if sq.terrain not in [6, 7, 8]]
-  if tomove.can_fly == 0:
-    square = [sq for sq in square if sq.terrain != 5]
-  
-  if destiny.x < position.x:
-    square = [sq for sq in square if sq.x <= position.x]
-  if destiny.x > position.x:
-    square = [sq for sq in square if sq.x >= position.x]
-  if destiny.y < position.y:
-    square = [sq for sq in square if sq.y <= position.x]
-  if destiny.y > position.y:
-    square = [sq for sq in square if sq.x >= position.x]
-  
-  square = sorted(square, key=attrgetter("subterrain", "hill"))
-  Pdb().set_trace()
-  checknext = square[0]
-  return checknext
-
-def get_units(position):
-  global tileunits
-  tileunits = list()
-  for unit in position.military+position.civil:
-    if unit.seen:
-      tileunits.append(unit)
-
-def healunit(unit):
-  global players
-  mapupdate()
-  player = players[num] 
-  pos = wmap[unit.location]
-  heal = pos.heal
-  if unit.can_heal and unit.hitpoint < unit.hitpoint_m:
-    if pos.player in unit.friends:
-      heal_rate = unit.heal_infriend+heal
-      unit.hitpoint += heal_rate*unit.hitpoint_m//100
-    if pos.player == None:
-      heal_rate = unit.heal_inneutral+heal
-      unit.hitpoint += heal_rate*unit.hitpoint_m//100
-    if pos.player not in unit.friends and pos.player != None:
-      heal_rate = unit.heal_inhostile+heal
-      unit.hitpoint += heal_rate*unit.hitpoint_m//100
-      
-    if unit.hitpoint > unit.hitpoint_m: 
-      unit.hitpoint = unit.hitpoint_m
-
-def info_city(event, position):
-  if event.key == pygame.K_c:
-    sp.speak('{} {}.'.format(city.culture, culture_t),1)
-  if event.key == pygame.K_d:
-    sp.speak('{} {}.'.format(wmap[city.location].c_defense, defense_t),1)
-  if event.key == pygame.K_e:
-    sp.speak('{} {}.'.format(city.gold, gold_t),1)
-  if event.key == pygame.K_q:
-    sp.speak('{} {}.'.format(city.food, food_t),1)
-  if event.key == pygame.K_s:
-    sp.speak("{} {}, {} {}, {} {}, {} {}.".format(position.totalfood, food_t, position.totalproduction, production_t, position.totalgold, gold_t, position.culture, culture_t))
-  if event.key == pygame.K_w:
-    sp.speak('{} {}.'.format(city.production, production_t),1)
-
-def info_tile(event, position):
-  if event.key == pygame.K_a:
-    attr = get_attrition(position, player)
-    sp.speak('{} {}%.'.format(attrition_t, attr),1)
-  if event.key == pygame.K_c:
-    sp.speak('{} {}.'.format(culture_t, position.culture),1)
-  if event.key == pygame.K_d:
-    sp.speak('{} {}%.'.format(defense_t, position.totaldefense),1)
-  if event.key == pygame.K_e:
-    sp.speak('{} {}.'.format(gold_t, position.totalgold),1)
-  if event.key == pygame.K_q:
-    sp.speak('{} {}.'.format(food_t, position.totalfood),1)
-  if event.key == pygame.K_r:
-    if position.resource:
-      res = position.resource
-      tospeak = '{} {}, {} {}, {} {}.'.format(food_t, res.food, production_t,
-        res.production, gold_t, res.gold)
-      sp.speak('{}. {}'.format(res.name, tospeak), 1)
-  if event.key == pygame.K_s:
-    info = 1
-  if event.key == pygame.K_w:
-    sp.speak('{} {}.'.format(production_t, position.totalproduction),1)
-
-def info_unit(event, position):
-  if event.key == pygame.K_a:
-    sp.speak('{} {}, {} {}.'.format(strength_t, tomove.strength, precision_t, tomove.precision),1)
-  if event.key == pygame.K_d:
-    sp.speak('{} {}, {} {}.'.format(protection_t, tomove.protection, defense_t, tomove.defense), 1)
-  if event.key == pygame.K_e:
-    sp.speak('{} {}.'.format(maintenance_t, tomove.maintenance), 1)
-    sp.speak('{} {}.'.format(food_t, tomove.food_cost))
-  if event.key == pygame.K_q:
-    sp.speak('{} {} {} {}.'.format(hitpoint_t, tomove.hitpoint, of_t, tomove.hitpoint_m),1)
-  if event.key == pygame.K_r:
-    for notes in tomove.notes:
-      if notes == tomove.notes[-1]:
-        sp.speak('{}.'.format(notes))
-      else:
-        sp.speak('{},'.format(notes))
-  if event.key == pygame.K_s:
-    describeunit(tomove)
-  if event.key == pygame.K_w:
-    sp.speak('{} {} {} {}.'.format(moves_t, tomove.moves, of_t, tomove.moves_m),1)
-
 
 def loadingmap(location, filext, saved=0):
   global globales, wmap, height, width, east, west, name
@@ -1520,12 +1565,16 @@ def loadingmap(location, filext, saved=0):
 
 def loadsound(soundfile, channel=0, path=sounds,  extention=wav):
   if channel == 0:
-    mixer.Sound(path+soundfile+wav).play()
-    return mixer.Sound(path+soundfile+wav).get_length()
+    mixer.Sound(path+soundfile+extention).play()
+    return mixer.Sound(path+soundfile+extention).get_length()
   if channel:
-    mixer.Sound(path+soundfile+wav)
-    channel.play(mixer.Sound(path+soundfile+wav))
-    return mixer.Sound(path+soundfile+wav).get_length()
+    mixer.Sound(path+soundfile+extention)
+    vol = channel.get_volume()
+    type(vol)
+    print(vol)
+    print(type(vol))
+    channel.play(mixer.Sound(path+soundfile+extention))
+    return mixer.Sound(path+soundfile+extention).get_length()
 
 def mapupdate():
   global wmap, player
@@ -2209,15 +2258,13 @@ def quiting():
 
 def remove_unit():
   global wmap
-  global player, wmap
-  for unit in position.civil+position.military:
-    if unit.hitpoint < 1:
-      for inside in unit.units:
-        inside.hitpoint = -1
+  for tile in wmap:
+    for unit in tile.military+tile.civil:
+      unit.units = [u for u in unit.units if u.hitpoint > 0]
   
-  for terrain in wmap:
-    terrain.military = [unit for unit in terrain.military if unit.hitpoint >0]
-    terrain.civil = [unit for unit in terrain.civil if unit.hitpoint >0]
+  for tile in wmap:
+    tile.civil = [unit for unit in tile.civil if unit.hitpoint > 0]
+    tile.military = [unit for unit in tile.military if unit.hitpoint > 0]
   
   for pl in players:
     pl.units = [unit for unit in pl.units if unit.hitpoint > 0]
@@ -2257,6 +2304,25 @@ def selector(item, x, go='', wrap=0, sound="s1", snd=1):
       x += 1
       if snd: loadsound(sound)
       return x
+
+def set_actions(event, position, unit):
+  if unit.is_worker:
+    items = get_items(player, "improvement", unit)
+    item_selection(city, items, player, position, "improvements", unit)
+    
+    return
+  if unit.is_settler and unit.moves > 0:
+    ask = asking(warning1_t)
+    if ask == 0: return
+    loadsound('buildconstruct1')
+    add_city(player, position)
+    set_city(player)
+    set_science(player)
+    unit.hitpoint = -1
+    remove_unit()
+    tomove = list()
+    get_units(position)
+    set_units(can_combat)
 
 def set_city(player):
   global players
@@ -2597,20 +2663,29 @@ def setplayersstart():
     pl.av_tech = pl.nation.av_tech
     pl.initial_units = pl.nation.initial_units
     pl.initial_buildings = pl.nation.initial_buildings
+    
     for res in resource_list:
       if res.visible == 1: pl.revealed.append(res)
+    
+    if pl.full_tech:
+      for tech in pl.av_tech:
+        if tech not in pl.researched: 
+          pl.researched.append(DC(tech))
+    
     if pl.position == None:
       pl.position = set_position(pl)
+    
     setplace(pl.position, value=3, action="block")
+    
     for u in pl.initial_units:
       if pl.nomads == 0:
-        addunit(pl, pl.position, u)
+        add_unit(pl, pl.position, u)
       if pl.nomads:
         position = set_position()
-        addunit(pl, position, u)
-    for tech in pl.researched:
-      tech.setself(pl)
-    
+        add_unit(pl, position, u)
+  
+  for pl in players:
+      tech.setself(pl)  
   
   for pl in players:
     if pl.cities:
@@ -2904,7 +2979,7 @@ def startturn(player):
       if (city.queue and city.queue[0].production_cost <= 0 
         and city.queue[0].is_unit):
         city.queue[0].production_cost = 0
-        addunit(player, wmap[city.location], city.queue[0])
+        add_unit(player, wmap[city.location], city.queue[0])
         city.queue.remove(city.queue[0])
   
   set_city(player)
@@ -2928,8 +3003,8 @@ def startturn(player):
     healunit(unit)
     for t in wmap:
       for unit in t.military+t.civil:
-        if unit.moves < unit.moves_m:
-          unit.moves = unit.moves_m
+        if unit.moves < unit.moves_max:
+          unit.moves = unit.moves_max
 
 def tile_info(position):
   global info, saycord, sayitem, sayterrain, sayunit
@@ -2939,7 +3014,7 @@ def tile_info(position):
   
   if saycord:
     saycord = 0
-    sp.speak("{} {}".format(position.x, position.y))
+    sp.speak("{} {}".format(position.x, position.y),1)
   
   if sayitem:
     sayitem = 0
@@ -2947,10 +3022,10 @@ def tile_info(position):
   if sayterrain:
     sayterrain = 0
     if position.sight == 0:
-      sp.speak('{}.'.format(fog_t))
+      sp.speak('{}.'.format(fog_t),1)
       if position in player.seen:
         sighted = player.seen[player.seen.index(position)]
-        if sighted.name: sp.speak(sighted.name)
+        if sighted.name: sp.speak(sighted.name,1)
         if sighted.city and sighted.city.capital == 0: sp.speak(city_t)
         if sighted.city and sighted.city.capital: sp.speak(capital_t)
         if sighted.resource and sighted.resource.visible:
@@ -3076,9 +3151,7 @@ def maingame    ():
         
         #Actions.
         if event.type == pygame.KEYDOWN and event.key == pygame.K_b:
-          if tomove and tomove.moves:
-            get_event(event, player, position, tomove)
-            
+          set_actions(event, position, tomove)
         
         
         # Map cursor.
@@ -3105,6 +3178,8 @@ def maingame    ():
             position = wmap[tomove.location]
             set_move(event, position)
             moving()
+            get_units(position)
+          set_units(can_combat)
         
         
         #Next Turn.
@@ -3138,14 +3213,19 @@ def setfolders():
 
 builder = 0
 
-if builder == 0:
-  setfolders()
-  loadingmap("maps//", "/*.cvm")
-  definitions()
-  setplayersstart()
-  maingame()
-if builder == 1:
-  loadingmap("maps//", "/*.cvm")
-  setfolders()
-#         creatingmap()
-  maingame()
+
+def start_app():
+  if builder == 0:
+    setfolders()
+    loadingmap("maps//", "/*.cvm")
+    definitions()
+    setplayersstart()
+    maingame()
+  if builder == 1:
+    loadingmap("maps//", "/*.cvm")
+    setfolders()
+  #         creatingmap()
+    maingame()
+
+
+start_app()

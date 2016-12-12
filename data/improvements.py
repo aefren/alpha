@@ -303,7 +303,7 @@ class Farm(Improvement):
   terrain = [0, 1, 2]
   subterrain = [-1]
   hill = [0]
-  in_friend = 1
+  tile_owned = [0]
   freeresources = 1
   resource1 = [wheat]
   food = 1

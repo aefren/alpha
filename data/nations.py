@@ -43,7 +43,7 @@ class Natives(Nation):
   av_units = [druid, hunters, scouts, horse_archers, rangers, warriors, worker, 
     settler, trireme, work_boat]
   initial_buildings = [great_hall]
-  initial_units = [scouts, warriors, warriors, warriors, settler]
+  initial_units = [worker, scouts, warriors, warriors, warriors, settler]
 #   initial_units = [hunters, galley, galley, cataphracts, catapult, scouts, warriors, settler]
   researched = [agriculture]
 

@@ -131,10 +131,7 @@ class Improvement:
   terrain = [0, 1, 2, 3, 4, 5, 6, 7, 8]
   subterrain = [-1, 0, 1, 2]
   hill = [0, 1]
-  in_owns = 1
-  in_friend = 0
-  in_neutral = 0
-  in_hostile = 0
+  tile_owned = [0]
   freeresources = 0
   resource1 = list()
   resource2 = list()
@@ -185,6 +182,8 @@ class Player():
   lastposition = list()
   nation = None
   player = None
+  
+  full_tech = 1
   
   clear_forest = 0
   clear_jungle = 0
@@ -470,8 +469,8 @@ class Unit:
     if self.is_worker:
       self.notes.append(worker_t)
     
-    self.moves_m = self.moves 
-    self.hitpoint_m = self.hitpoint
+    self.moves_max = self.moves 
+    self.hitpoint_max = self.hitpoint
     self.delete = 0
 
 class Civil(Unit):

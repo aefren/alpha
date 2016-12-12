@@ -496,6 +496,7 @@ class Worker(Civil, Land_Human_Unit):
   name = worker_t
   production_cost = 45
   maintenance = 1
+#   improvements = [farm]
   improvements = [camp, farm, fort, fishing_boat, mine, lumber_mill, 
     offshore_platform, oil_weel, pasture, plantation, quarry, trading_post, ]
   tech_rq = [agriculture]
