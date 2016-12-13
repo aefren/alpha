@@ -127,7 +127,6 @@ class Improvement:
   turns_m = turns
   in_progress = 1
   hitpoint = 100
-  tech_rq = list()
   terrain = [0, 1, 2, 3, 4, 5, 6, 7, 8]
   subterrain = [-1, 0, 1, 2]
   hill = [0, 1]

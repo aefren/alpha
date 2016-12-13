@@ -299,11 +299,11 @@ class Farm(Improvement):
   name = farm_t
   turns = 3
   tech_rq = [agriculture]
-  sound = ["cow1", "cow2", "cow3"]
+  tile_owned = [0]
+  hill = [0]
   terrain = [0, 1, 2]
   subterrain = [-1]
-  hill = [0]
-  tile_owned = [0]
+  sound = ["cow1", "cow2", "cow3"]
   freeresources = 1
   resource1 = [wheat]
   food = 1
@@ -312,10 +312,10 @@ class Fort(Improvement):
   name = fort_t
   turns = 10
   tech_rq = [engineering]
+  tile_owned = [0, 1]
+  hill = [0, 1]
   terrain = [0, 1, 2, 3, 4]
   subterrain = [-1, 0, 1]
-  in_friend = 1
-  in_neutral = 1
   freeresources = 1
   defense = 25
  
@@ -323,18 +323,22 @@ class Fishing_boat(Improvement):
   name = fishing_boat_t
   turns = 2
   tech_rq = [sailing]
+  tile_owned = [0]
+  hill = [0]
   terrain = [6]
+  subterrain = [-1]
   resource1 = [crab, fish, pearl, whales]
+  freeresource = 0
   food = 1
  
 class Mine(Improvement):
   name = mine_t
   turns = 4
   tech_rq =[mining]
+  tile_owned = [0]
   terrain = [0, 1, 2, 3, 4]
   subterrain = [-1]
   hill = [0, 1]
-  freeresources = 1
   resource1 = [gold, silver]
   resource2 = [salt]
   resource3 = [aluminum, coal, copper, iron, ]
@@ -349,7 +353,11 @@ class Lumber_Mill(Improvement):
   name = lumber_mill_t
   turns = 3
   tech_rq =[construction]
+  tile_owned = [0]
+  hill = [0, 1]
+  terrain = [0, 1, 2, 3]
   subterrain = [1]
+  freeresource = 1
   production = 1
  
 class Offshore_Platform(Improvement):
@@ -370,8 +378,13 @@ class Pasture(Improvement):
   name = pasture_t
   turns = 2
   tech_rq = [animal_husbandry]
+  tile_owned = [0]
+  hill = [0, 1]
+  terrain = [1, 2]
+  subterrain = [-1]
   resource1 = [cattle, horses]
   resource2 = [camel, sheep]
+  freeresource = 0
   def setself(self, pos):
     if pos.resource in self.resource1:
       self.production = 1
@@ -386,6 +399,7 @@ class Plantation(Improvement):
   subterrain = -1
   resource1 = [bananas]
   resource2 = [cocoa, coffe, cotton, dyes, incense, shugar, wine]
+  freeresource = 0
   def setself(self, pos):
     if pos.resource in self.resource1:
       self.food = 2
@@ -397,7 +411,12 @@ class Quarry(Improvement):
   name = quarry_t
   turns = 4
   tech_rq = [masonry]
+  tile_owned = [0]
+  hill = [0, 1]
+  terrain = [0, 1, 2, 3, 4]
+  subterrain = [-1, 0, 1]
   resource1 = [stone, marble]
+  freeresource = 0
   production = 1
   gold = 1
 
@@ -405,10 +424,13 @@ class Trading_Post(Improvement):
   name = trading_post_t
   turns = 6
   tech_rq = [guilds]
-  
+  tile_owned = [0]
   terrain = [0, 1, 2, 3]
   subterrain = [-1, 0, 1]
+  hill = [0, 1]
+  freeresource = 1
   gold = 1
+  culture = 5
 
 # Improvemments vars.
 camp = Camp()
@@ -434,9 +456,9 @@ for res in resource_list:
   if res in luxury: res.type = 1
   if res in strategic: res.type = 0
 
-land_improvements = [camp, farm, fort, mine, lumber_mill, pasture]
-land_improvements += [plantation, quarry, trading_post]
-water_improvements = [fishing_boat, offshore_platform, oil_weel]
+land_improvements = [farm, fort, mine, lumber_mill, pasture]
+land_improvements += [quarry, trading_post]
+water_improvements = [fishing_boat]
 improvements_list = land_improvements+water_improvements
 
 print('{} recursos'.format(len(resource_list)))

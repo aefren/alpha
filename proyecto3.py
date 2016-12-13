@@ -399,25 +399,37 @@ def check_enemy():
   
   sp.speak('{} {}, {} {}.'.format(enemies, enemies_t, friends, friends_t),1)
 
-def check_improvement_rq(improvement, player, position):0
+def check_improvement_rq(improvement, player, position):
+  blocked = 0
   playername = player.player
-  in_owned = 1
+  in_owned = 0
+  # NOTE to pas next tree vars to 0.
   in_resource = 1
-  in_terrain = 1
-  in_subterrain = 1
+  in_terrain = 0
+  in_subterrain = 0
   
-  if position.player ==player.player and 0 in improvement.tile_owned:
-    in_owned = 0
-  if position.player inplayer.friends and 1 in improvement.tile_owned:
-    in_owned = 0
+  if position.player ==playername and 0 in improvement.tile_owned:
+    in_owned = 1
+  if position.player in player.friends and 1 in improvement.tile_owned:
+    in_owned = 1
   if position.player ==None and 2 in improvement.tile_owned:
-    in_owned = 0
-  if (position.player != player.player and position.player not in player.friends
+    in_owned = 1
+  if (position.player != playername and position.player not in player.friends
       and position.player != None and 3 in improvement.tile_owned):
-    in_owned = 0
+    in_owned = 1
+  
+  if position.terrain in improvement.terrain: in_terrain = 1
+  if position.subterrain in improvement.subterrain: in_subterrain = 1
+  
+  blocklist = [in_owned, in_resource, in_terrain, in_subterrain]
+  for i in blocklist:
+    if i == 0: 
+      blocked = 1
+  
+  return blocked  
+
 
 def check_improvement_rq1(item, player, position):
-if position.player inplayer.friends and 1 in improvement.tile_owned:
   blocked = 1
   playername = player.player
   if item.in_owns and position.player == playername:
@@ -1470,6 +1482,7 @@ def item_selection(city, item, player, position, toget, unit):
           if item and toget == 'improvements':
             blocked = check_improvement_rq(item[x], player, position)
             if blocked:
+              loadsound("errn1")
               continue
             
             start_improvement(item[x], position, unit)
@@ -2307,10 +2320,12 @@ def selector(item, x, go='', wrap=0, sound="s1", snd=1):
 
 def set_actions(event, position, unit):
   if unit.is_worker:
-    items = get_items(player, "improvement", unit)
-    item_selection(city, items, player, position, "improvements", unit)
-    
-    return
+    if position.city == None:
+      items = get_items(player, "improvement", unit)
+      item_selection(city, items, player, position, "improvements", unit)
+    if position.city:
+      loadsound('errn1')
+  
   if unit.is_settler and unit.moves > 0:
     ask = asking(warning1_t)
     if ask == 0: return
@@ -2643,7 +2658,6 @@ def setplayersstart():
     pl.actions = pl.nation.actions
     pl.commandpoints = pl.nation.commandpoints
     pl.friends = list()
-    pl.friends.append(pl.player)
     pl.citynames = pl.nation.citynames
     if pl.nation.randomname: shuffle(pl.citynames)
     pl.enemies = list()
