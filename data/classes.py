@@ -54,7 +54,6 @@ class Building:
   maintenance = 0
   heal = 0
   defense = 0
-  stack = 0
   building_rq = list()
   buildings = list()
   improvements = list()
@@ -119,6 +118,7 @@ class City:
 class Improvement:
   name = None
   turns = 0
+  player = None
   maintenance = 0
   tech_rq = list()
   working = 0
@@ -182,7 +182,7 @@ class Player():
   nation = None
   player = None
   
-  full_tech = 1
+  full_tech = 0
   
   clear_forest = 0
   clear_jungle = 0
@@ -323,6 +323,9 @@ class Tech:
   compoints = 0
   heal = 0
   stack = 0
+  
+  def __init__(self):
+    self.science_cost_max = self.science_cost
   
   def setself(self, player):
     for res in self.reveal: 

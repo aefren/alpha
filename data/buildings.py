@@ -7,13 +7,13 @@ from data.technologies import *
 class Armory(Building):
   name = armory_t
   production_cost = 160
-  tech_rq = [steel]
+  tech_rq = ["steel"]
 
 class Aqueduct(Building):
   name = aqueduct_t
   production_cost = 100
   maintenance = 1
-  tech_rq = ['engineering']
+  tech_rq = ["engineering"]
   happiness = 1
   food = 1
   
@@ -22,8 +22,8 @@ class Barracks(Building):
   name = barracks_t
   production_cost = 75
   maintenance = 1
-  tech_rq = [bronze_working]
-  units = ['hirdmen', 'hoplites', 'immortals', 'huskarl', 'jarl', 'legatus', 'principes', 'spearmen', 'triarii']
+  tech_rq = ["bronze_working"]
+  units = ["hirdmen", "hoplites", "immortals", "huskarl", "jarl", "legatus", "principes", "spearmen", "triarii"]
 
 class Castle(Building):
   name = castle_t
@@ -38,20 +38,20 @@ class Colosseum(Building):
   name = colosseum_t
   production_cost = 100
   maintenance = 1
-  tech_rq = [construction]
+  tech_rq = ["construction"]
   happiness = 2
   
   
 
 class Colossus(Building):
   name = colosus_t
-  tech_rq = [iron_working]
+  tech_rq = ["iron_working"]
 
 class Courthouse(Building):
   name = courthouse_t
   production_cost = 100
   maintenance = 4
-  tech_rq = [mathematics]
+  tech_rq = ["mathematics"]
   unappiness = -2
   
 
@@ -64,14 +64,14 @@ class Curia(Building):
   happiness = 3
   culture = 10
   science = 4
-  units = ['legatus']
+  units = ["legatus"]
 
 class Granary(Building):
   name = granary_t
   production_cost = 60
   cost = 60
   maintenance = 1
-  tech_rq = [pottery]
+  tech_rq = ["pottery"]
   resource1 = [bananas, deer, wheat]
   food = 1
   def setself(self, player, city):
@@ -82,6 +82,7 @@ class Granary(Building):
 class Great_Hall(Building):
   name = great_hall_t
   production_cost = 80
+  units = ["warriors"]
   cost = 100
   stack = 2 
   happiness = 5
@@ -95,7 +96,7 @@ class Forge(Building):
   name = forge_t
   production_cost = 120
   maintenance = 1
-  tech_rq = [metal_casting]
+  tech_rq = ["metal_casting"]
   res_rq = [iron]
   resource1 = [iron]
   def setself(self, player, city):
@@ -108,7 +109,7 @@ class Library(Building):
   name = library_t
   production_cost = 75
   maintenance = 1
-  tech_rq = [writing]
+  tech_rq = ["writing"]
   def setself(self, player, city):
     city.science += city.population//2
 
@@ -119,7 +120,7 @@ class Monument(Building):
   name = monument_t
   production_cost = 40
   maintenance = 1
-  tech_rq = [agriculture]
+  tech_rq = ["agriculture"]
   culture = 2 
 
 class Oracle(Building):
@@ -129,7 +130,7 @@ class Palace(Building):
   name = palace_t
   production_cost = 140
   cost = 140
-  tech_rq = [agriculture]
+  tech_rq = ["agriculture"]
   stack = 2
   happiness = 4
   culture = 5
@@ -142,8 +143,8 @@ class Shrine(Building):
   name = shrine_t
   production_cost = 40
   maintenance = 1
-  tech_rq = [pottery]
-  units = ['druid']
+  tech_rq = ["pottery"]
+  units = ["druid"]
   culture = 5
   heal = 10
   happiness = 2
@@ -152,7 +153,7 @@ class Stable(Building):
   name = stable_t
   production_cost = 100
   maintenance = 1
-  tech_rq = [animal_husbandry]
+  tech_rq = ["animal_husbandry"]
   improvements = [pasture]
   resource1 = [cattle, horses, sheep]
   def setself(self, player, city):
@@ -174,8 +175,8 @@ class Theater(Building):
 class Thingvellir(Building):
   name = thingvellir_t
   production_cost = 100
-  tech_rq = [agriculture]
-  units = ['hirdmen', 'huskarl', 'jarl']
+  tech_rq = ["agriculture"]
+  units = ["hirdmen", "huskarl", "jarl"]
   stack = 2
   happiness = 4
   culture = 5
@@ -197,7 +198,7 @@ class Workshop(Building):
   name = workshop_t
   production_cost = 120
   maintenance = 2
-  tech_rq = [metal_casting]
+  tech_rq = ["metal_casting"]
   production = 2
 
 armory = Armory()
@@ -232,4 +233,4 @@ buildings_list = [armory, aqueduct, barracks, castle, circus, colosseum,
 
 defensive_buildings = [walls]
 buildings_list += defensive_buildings
-print('{} edificios.'.format(len(buildings_list)))
+print("{} edificios.".format(len(buildings_list)))
